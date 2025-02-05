@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -44,11 +45,8 @@ class UserController extends Controller
         Auth::login($user);
         return redirect()->route('dashboard');
     }
-    public function login(Request $request){
-        $validatedData = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+    public function login(LoginRequest $request){
+        $validatedData = $request->validated();
         if (Auth::attempt($validatedData)) {
             $request->session()->regenerate();
             return redirect()->route('dashboard');
@@ -68,10 +66,13 @@ class UserController extends Controller
     public function updateProfile(UpdateUserRequest $request)
     {
         $user = Auth::user();
-        $user->name = $request->input('name');
-        $user->email = $request->input('email');
+        $data = $request->validated();
+        $user->fill($data);
         if ($request->hasfile('image')) {
-            unlink(public_path('storage/images/'.$user->image));
+            $oldImagePath = public_path('storage/images/' . $user->image);
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
             $file = $request->file('image');
             $filename = time().'.'.$file->getClientOriginalExtension();
             $file->storeAs('images', $filename, 'public');
