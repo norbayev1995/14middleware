@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
-use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
-class UserController extends Controller
+class AuthController extends Controller
 {
     public function dashboard()
     {
@@ -30,7 +31,7 @@ class UserController extends Controller
         Auth::logout();
         return redirect()->route('loginPage');
     }
-    public function register(StoreUserRequest $request){
+    public function register(RegisterRequest $request){
         $user = new User();
         $user->name = $request->input('name');
         $user->email = $request->input('email');
@@ -47,6 +48,10 @@ class UserController extends Controller
     }
     public function login(LoginRequest $request){
         $validatedData = $request->validated();
+        $user = User::where('email', $request->email)->first();
+        if (!Hash::check($request->password, $user->password)) {
+            return 'Parol notogri';
+        }
         if (Auth::attempt($validatedData)) {
             $request->session()->regenerate();
             return redirect()->route('dashboard');
